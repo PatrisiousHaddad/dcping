@@ -161,14 +161,14 @@ static void dcping_init_conn_param(struct dcping_cb *cb, int conn_num,
 	uint32_t qp_num = 0;
 
 	if (cb->is_server) {
-		//if(mlx5dv_reserved_qpn_alloc(cb->ctx,&qp_num)) {/*incase of failure*/
+		if(mlx5dv_reserved_qpn_alloc(cb->ctx,&qp_num)) {/*incase of failure*/
 		// fake a unique qp_num based on peer's IP addr + UDP port as we're
 		// using the same DCT as an external QPN from all RDMA_CM connection
-		qp_num = (((struct sockaddr_in *)rdma_get_peer_addr(cm_id))->sin_addr.s_addr) << 16;
-		qp_num |=  be16toh(rdma_get_dst_port(cm_id));
-		cb->fake_qp_array[cb->fake_qp_index]=qp_num;
-		cb->fake_qp_index++;
-		//}
+			qp_num = (((struct sockaddr_in *)rdma_get_peer_addr(cm_id))->sin_addr.s_addr) << 16;
+			qp_num |=  be16toh(rdma_get_dst_port(cm_id));
+			cb->fake_qp_array[cb->fake_qp_index]=qp_num;
+			cb->fake_qp_index++;
+		}
 	} else {
 		/*conn_num doesn't matter for server - used to pick qp_num for client*/
 		qp_num = (conn_num) ? cb->qp->qp_num : cb->qp_2->qp_num;
@@ -406,12 +406,12 @@ static void dcping_free_qp(struct dcping_cb *cb)
 	if (cb->qp) ibv_destroy_qp(cb->qp);
 	if (cb->qp_2) ibv_destroy_qp(cb->qp_2);
 	if (cb->srq) ibv_destroy_srq(cb->srq);
-	/*if(cb->is_server) {
+	if(cb->is_server) {
 		while(cb->fake_qp_index!=-1){
 			cb->fake_qp_index--;
 			mlx5dv_reserved_qpn_dealloc(cb->ctx,cb->fake_qp_array[cb->fake_qp_index]);
 		}
-	}*/
+	}
 	ibv_destroy_cq(ibv_cq_ex_to_cq(cb->cq));
 	ibv_destroy_comp_channel(cb->channel);
 	ibv_dealloc_pd(cb->pd);
